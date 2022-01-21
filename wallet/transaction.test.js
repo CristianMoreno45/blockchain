@@ -1,5 +1,6 @@
 const Transaction = require('./transaction');
 const Wallet = require('./index');
+const { MINE_REWARD } = require('../config');
 
 describe('Probar el objeto Wallet', () => {
     let transaction = new Transaction();
@@ -59,15 +60,26 @@ describe('Probar el objeto Wallet', () => {
         });
 
         it('Debe validar que el saldo se vea afectado por el nuevo movimiento', () => {
-            expect(transaction.outputs.find(output=>  output.address === wallet.publicKey).amount)
-            .toEqual(wallet.balance - amount - nextAmount);
+            expect(transaction.outputs.find(output => output.address === wallet.publicKey).amount)
+                .toEqual(wallet.balance - amount - nextAmount);
         });
+
         it('Debe validar que el el monto de la segunda operación con el monto', () => {
-            expect(transaction.outputs.find(output=>  output.address === nextRecipient).amount)
-            .toEqual(nextAmount);
+            expect(transaction.outputs.find(output => output.address === nextRecipient).amount)
+                .toEqual(nextAmount);
         });
-   
+
     });
 
+    describe('Validar la creacion de una transacción de recompensa por minería', () => {
+        beforeEach(() => {
+            transaction = Transaction.rewardTransaction(wallet, Wallet.blockchainWallet());
+        });
+
+        it('Debe validar que el monto otorogado sea igual al permitido en la configuración', () => {
+            expect(transaction.outputs.find(o => o.address === wallet.publicKey).amount)
+                .toEqual(MINE_REWARD);
+        });
+    });
 
 });

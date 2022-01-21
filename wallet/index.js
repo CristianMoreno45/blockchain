@@ -18,8 +18,8 @@ class Wallet {
         return this.keyPair.sign(dataHash);
     }
 
-    createTransaction(recipient, amount, transactionPool) {
-        
+    createTransaction(recipient, amount, blockchain, transactionPool) {
+        this.balance = this.calculateBalance(blockchain);
         if (amount > this.balance) {
             console.log(`El monto ${amount} excede el saldo actual ${this.balance}.`);
             return;
@@ -33,6 +33,52 @@ class Wallet {
         }
         return transaction;
 
+    }
+
+    calculateBalance(blockchain, test = null) {
+        let balance = this.balance;
+        let transactions = [];
+
+        blockchain.chain.forEach(block =>
+            block.data.forEach(transaction => {
+                transactions.push(transaction)
+            })
+        );
+
+        const walletInputTs = transactions
+            .filter(transaction => transaction.input.address === this.publicKey);
+
+        if (test) {
+            console.log(`Wallet's public key: ${ this.publicKey }`);
+        }
+        
+        let startTime = 0;
+
+        if (walletInputTs.length > 0) {
+            const recentInputT = walletInputTs.reduce(
+                (prev, current) => prev.input.timmeStamp > current.input.timmeStamp ? prev : current
+            );
+
+            balance = recentInputT.outputs.find(output => output.address === this.publicKey).amount;
+            startTime = recentInputT.input.timmeStamp;
+        }
+
+        transactions.forEach(transaction => {
+            if (transaction.input.timmeStamp > startTime) {
+                transaction.outputs.find(output => {
+                    if (output.address === this.publicKey) {
+                        balance += output.amount
+                    }
+                })
+            }
+        });
+        return balance;
+    }
+
+    static blockchainWallet() {
+        const blockchainWallet = new this();
+        blockchainWallet.address = 'blockchain-wallet';
+        return blockchainWallet;
     }
 }
 
